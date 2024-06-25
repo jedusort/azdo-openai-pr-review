@@ -16,7 +16,7 @@ export class HomePage extends React.Component<{}, {}> {
     public render() : JSX.Element {
         return (
             <div style={{width:"100%"}}>
-                <Header title="My first extension" titleSize={TitleSize.Large}/>
+                <Header title="ChatGPT Code Review Settings" titleSize={TitleSize.Large}/>
                 <div className="page-content flex-grow" style={{marginTop: "20px", marginLeft: "20px", marginRight: "20px"}}>
                     <Card>Page content</Card>
                 </div>
