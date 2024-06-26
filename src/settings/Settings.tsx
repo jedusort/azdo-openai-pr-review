@@ -12,11 +12,13 @@ import { IExtensionDataManager, IExtensionDataService } from "azure-devops-exten
 import { showRootComponent } from "../Common";
 import { Observer } from "azure-devops-ui/Observer";
 import "azure-devops-ui/Core/override.css";
+import "./Settings.css"; // Import custom CSS
 
 interface ISettingsState {
     projects: { id: string, text: string }[];
     engine: string;
     apiKey: string;
+    displayedApiKey: string;
     useAzure: boolean;
     selectedProjects: { id: string, text: string }[];
 }
@@ -32,12 +34,14 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
             projects: [],
             engine: 'davinci-codex',
             apiKey: '',
+            displayedApiKey: '',
             useAzure: false,
             selectedProjects: [],
         };
 
         this.saveSettings = this.saveSettings.bind(this);
         this.loadSettings = this.loadSettings.bind(this);
+        this.handleApiKeyChange = this.handleApiKeyChange.bind(this);
     }
 
     public async componentDidMount() {
@@ -115,9 +119,11 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
     public async loadSettings() {
         if (this.dataManager) {
             const settings = await this.dataManager.getValue<any>("chatgpt-settings", { defaultValue: {} });
+            const displayedApiKey = settings.apiKey ? `${settings.apiKey.slice(0, 4)}${'*'.repeat(settings.apiKey.length - 4)}` : '';
             this.setState({
                 engine: settings.engine || 'davinci-codex',
                 apiKey: settings.apiKey || '',
+                displayedApiKey: displayedApiKey,
                 useAzure: settings.useAzure || false,
                 selectedProjects: settings.projects || [],
             });
@@ -136,15 +142,21 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
         }
     }
 
+    public handleApiKeyChange(event: React.ChangeEvent<HTMLInputElement>) {
+        const apiKey = event.target.value.replace(/\*/g, '');
+        const displayedApiKey = `${apiKey.slice(0, 4)}${'*'.repeat(apiKey.length - 4)}`;
+        this.setState({ apiKey, displayedApiKey });
+    }
+
     public render(): JSX.Element {
         return (
             <div style={{ width: "100%" }}>
                 <Header title="ChatGPT Code Review Settings" titleSize={TitleSize.Large} />
                 <div className="page-content flex-grow" style={{ marginTop: "20px", marginLeft: "20px", marginRight: "20px" }}>
                     <Card>
-                        <form id="settings-form">
+                        <form id="settings-form" className="form-container">
                             <div className="form-item">
-                                <label htmlFor="projects">Select Projects</label>
+                                <label htmlFor="projects">Select Projects to authorize this extension</label>
                                 <Observer selection={this.projectSelection}>
                                     {() => (
                                         <Dropdown
@@ -173,10 +185,12 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                             </div>
                             <div className="form-item">
                                 <label htmlFor="apiKey">API Key</label>
-                                <TextField
-                                    value={this.state.apiKey}
-                                    onChange={(e, newValue) => this.setState({ apiKey: newValue })}
-                                    ariaLabel="API Key"
+                                <input
+                                    type="text"
+                                    value={this.state.displayedApiKey}
+                                    onChange={this.handleApiKeyChange}
+                                    aria-label="API Key"
+                                    className="input-password"
                                 />
                             </div>
                             <div className="form-item">

@@ -1,0 +1,17 @@
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-password {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 14px;
+}
