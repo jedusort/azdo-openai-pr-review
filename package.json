@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "rimraf ./dist ./out",
     "compile": "npm run clean && webpack --mode development",
+    "compile-prod": "npm run clean && webpack",
     "start": "webpack-dev-server --mode development",
+    "start-prod": "webpack-dev-server --mode production",
     "package": "npm run compile && tfx extension create --manifest-globs vss-extension.json --output-path out --rev-version"
   },
   "keywords": [],

@@ -2,7 +2,7 @@ import * as React from "react";
 import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Card } from "azure-devops-ui/Card";
 import { Dropdown } from "azure-devops-ui/Dropdown";
-import { DropdownMultiSelection, DropdownSelection  } from "azure-devops-ui/Utilities/DropdownSelection";
+import { DropdownMultiSelection, DropdownSelection } from "azure-devops-ui/Utilities/DropdownSelection";
 import { TextField } from "azure-devops-ui/TextField";
 import { Checkbox } from "azure-devops-ui/Checkbox";
 import { Button } from "azure-devops-ui/Button";
@@ -12,15 +12,16 @@ import { Observer } from "azure-devops-ui/Observer";
 import "azure-devops-ui/Core/override.css";
 
 interface ISettingsState {
-    projects: string[];
+    projects: { id: string, text: string }[];
     engine: string;
     apiKey: string;
     useAzure: boolean;
+    selectedProjects: { id: string, text: string }[];
 }
 
 export class SettingsPage extends React.Component<{}, ISettingsState> {
     private projectSelection = new DropdownMultiSelection();
-    private engineSelection = new DropdownSelection ();
+    private engineSelection = new DropdownSelection();
 
     constructor(props: {}) {
         super(props);
@@ -28,7 +29,8 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
             projects: [],
             engine: 'davinci-codex',
             apiKey: '',
-            useAzure: false
+            useAzure: false,
+            selectedProjects: [],
         };
 
         this.handleInputChange = this.handleInputChange.bind(this);
@@ -36,8 +38,47 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
         this.saveSettings = this.saveSettings.bind(this);
     }
 
-    public componentDidMount() {
+    public async componentDidMount() {
         SDK.init();
+        await this.loadProjects();
+    }
+
+    public async loadProjects() {
+        if (process.env.NODE_ENV === 'development2') {
+            this.loadProjectsStub();
+        } else {
+            try {
+                const accessToken = await SDK.getAccessToken();
+                const organization = await SDK.getHost().name;
+                const response = await fetch(`https://dev.azure.com/${organization}/_apis/projects?api-version=6.0`, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const projects = data.value.map((project: any) => ({
+                        id: project.id,
+                        text: project.name
+                    }));
+                    this.setState({ projects });
+                } else {
+                    console.error('Error fetching projects:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error fetching projects:', error);
+            }
+        }
+    }
+
+    public loadProjectsStub() {
+        const stubProjects = [
+            { id: "project1", text: "Stub Project 1" },
+            { id: "project2", text: "Stub Project 2" },
+            { id: "project3", text: "Stub Project 3" }
+        ];
+        this.setState({ projects: stubProjects });
     }
 
     public handleInputChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | React.SyntheticEvent<HTMLElement, Event>, value?: string) {
@@ -58,8 +99,10 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
     }
 
     public saveSettings() {
-        const selectedProjects = this.projectSelection.value.map((item: any) => item.id);
-
+        //const selectedProjects = this.projectSelection.value.map((item: any) => item.id);
+        console.log('Selected projects:', this.state.selectedProjects);
+        const selectedProjects = this.state.selectedProjects.map((item: any) => item.id);
+        console.log('Saving settings:', selectedProjects, this.state.engine, this.state.apiKey, this.state.useAzure);
         const settings = {
             projects: selectedProjects,
             engine: this.state.engine,
@@ -68,7 +111,7 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
         };
 
         localStorage.setItem('chatgpt-settings', JSON.stringify(settings));
-        alert('Settings saved successfully!');
+        // alert('Settings saved successfully!');
     }
 
     public render(): JSX.Element {
@@ -84,13 +127,9 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                                     {() => (
                                         <Dropdown
                                             placeholder="Select projects"
-                                            items={[
-                                                { id: "project1", text: "Project 1" },
-                                                { id: "project2", text: "Project 2" },
-                                                { id: "project3", text: "Project 3" }
-                                            ]}
+                                            items={this.state.projects}
                                             selection={this.projectSelection}
-                                            onSelect={(event, item) => this.handleInputChange(event, item.text)}
+                                            onSelect={(event, item) => this.state.selectedProjects.push({id: item.id, text: item.text!})}
                                         />
                                     )}
                                 </Observer>
@@ -115,7 +154,8 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                                 <label htmlFor="apiKey">API Key</label>
                                 <TextField
                                     value={this.state.apiKey}
-                                    onChange={(event, newValue) => this.handleInputChange(event, newValue)}
+                                    onChange={(e, newValue) => this.setState({ apiKey: newValue })}
+                                    // onChange={(event, newValue) => this.handleInputChange(event, newValue)}
                                     ariaLabel="API Key"
                                 />
                             </div>
