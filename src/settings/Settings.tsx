@@ -7,6 +7,8 @@ import { TextField } from "azure-devops-ui/TextField";
 import { Checkbox } from "azure-devops-ui/Checkbox";
 import { Button } from "azure-devops-ui/Button";
 import * as SDK from "azure-devops-extension-sdk";
+import { getService } from "azure-devops-extension-sdk";
+import { IExtensionDataManager, IExtensionDataService } from "azure-devops-extension-api";
 import { showRootComponent } from "../Common";
 import { Observer } from "azure-devops-ui/Observer";
 import "azure-devops-ui/Core/override.css";
@@ -22,6 +24,7 @@ interface ISettingsState {
 export class SettingsPage extends React.Component<{}, ISettingsState> {
     private projectSelection = new DropdownMultiSelection();
     private engineSelection = new DropdownSelection();
+    private dataManager: IExtensionDataManager | undefined;
 
     constructor(props: {}) {
         super(props);
@@ -34,11 +37,20 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
         };
 
         this.saveSettings = this.saveSettings.bind(this);
+        this.loadSettings = this.loadSettings.bind(this);
     }
 
     public async componentDidMount() {
         SDK.init();
+        await this.loadDataManager();
         await this.loadProjects();
+        await this.loadSettings();
+    }
+
+    private async loadDataManager() {
+        const accessToken = await SDK.getAccessToken();
+        const dataService = await getService<IExtensionDataService>("ms.vss-features.extension-data-service");
+        this.dataManager = await dataService.getExtensionDataManager(SDK.getExtensionContext().id, accessToken);
     }
 
     public async loadProjects() {
@@ -79,16 +91,14 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
         this.setState({ projects: stubProjects });
     }
 
-    public saveSettings() {
+    public async saveSettings() {
         const selectedIds = this.projectSelection.value
             .map((selectionRange) => {
-            // selectionRange contains beginIndex and endIndex
-            return this.state.projects
-                .slice(selectionRange.beginIndex, selectionRange.endIndex + 1)
-                .map((item) => item.id);
+                return this.state.projects
+                    .slice(selectionRange.beginIndex, selectionRange.endIndex + 1)
+                    .map((item) => item.id);
             }).flat();
 
-        console.log('Saving settings:', selectedIds, this.state.engine, this.state.apiKey, this.state.useAzure);
         const settings = {
             projects: selectedIds,
             engine: this.state.engine,
@@ -96,8 +106,28 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
             useAzure: this.state.useAzure
         };
 
-        localStorage.setItem('chatgpt-settings', JSON.stringify(settings));
-        alert('Settings saved successfully!');
+        if (this.dataManager) {
+            await this.dataManager.setValue("chatgpt-settings", settings);
+            alert('Settings saved successfully!');
+        }
+    }
+
+    public async loadSettings() {
+        if (this.dataManager) {
+            const settings = await this.dataManager.getValue<any>("chatgpt-settings", { defaultValue: {} });
+            this.setState({
+                engine: settings.engine || 'davinci-codex',
+                apiKey: settings.apiKey || '',
+                useAzure: settings.useAzure || false,
+                selectedProjects: settings.projects || [],
+            });
+
+            // Update projectSelection based on loaded settings
+            if (settings.projects && settings.projects.length > 0) {
+                const selectedIndices = this.state.projects.map((project, index) => settings.projects.includes(project.id) ? index : -1).filter(index => index >= 0);
+                selectedIndices.forEach(index => this.projectSelection.select(index));
+            }
+        }
     }
 
     public render(): JSX.Element {
@@ -147,7 +177,6 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                                 <Checkbox
                                     label="Use Azure OpenAI Endpoint"
                                     checked={this.state.useAzure}
-                                    // onChange={this.handleCheckboxChange}
                                     onChange={(e, checked) => this.setState({ useAzure: checked })}
                                     ariaLabel="Use Azure OpenAI Endpoint"
                                 />
