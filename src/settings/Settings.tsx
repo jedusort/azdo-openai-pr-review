@@ -127,6 +127,12 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                 const selectedIndices = this.state.projects.map((project, index) => settings.projects.includes(project.id) ? index : -1).filter(index => index >= 0);
                 selectedIndices.forEach(index => this.projectSelection.select(index));
             }
+
+            // Update engineSelection based on loaded settings
+            if (settings.engine) {
+                const engineIndex = settings.engine === 'davinci-codex' ? 0 : 1;
+                this.engineSelection.select(engineIndex);
+            }
         }
     }
 
