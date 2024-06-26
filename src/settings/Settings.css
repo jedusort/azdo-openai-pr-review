@@ -15,3 +15,17 @@
     border-radius: 3px;
     font-size: 14px;
 }
+
+.devops-input {
+    border: 1px solid #000203; /* Same border color as DevOps UI */
+    border-radius: 2px;
+    padding: 8px;
+    font-size: 14px;
+    outline: none;
+    width: 100%;
+}
+
+.devops-input:focus {
+    border-color: #005a9e;
+    box-shadow: 0 0 0 1px #005a9e;
+}

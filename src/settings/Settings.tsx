@@ -190,7 +190,7 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                                     value={this.state.displayedApiKey}
                                     onChange={this.handleApiKeyChange}
                                     aria-label="API Key"
-                                    className="input-password"
+                                    className="input-password devops-input"
                                 />
                             </div>
                             <div className="form-item">
