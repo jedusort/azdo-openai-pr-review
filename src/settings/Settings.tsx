@@ -33,8 +33,6 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
             selectedProjects: [],
         };
 
-        this.handleInputChange = this.handleInputChange.bind(this);
-        this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
         this.saveSettings = this.saveSettings.bind(this);
     }
 
@@ -81,37 +79,25 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
         this.setState({ projects: stubProjects });
     }
 
-    public handleInputChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | React.SyntheticEvent<HTMLElement, Event>, value?: string) {
-        const target = event.currentTarget as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-        const name = target.name;
-        const inputValue = value !== undefined ? value : target.type === 'checkbox' ? (target as HTMLInputElement).checked : target.value;
-
-        this.setState({
-            ...this.state,
-            [name]: inputValue
-        });
-    }
-
-    public handleCheckboxChange(event: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>, checked: boolean) {
-        this.setState({
-            useAzure: checked
-        });
-    }
-
     public saveSettings() {
-        //const selectedProjects = this.projectSelection.value.map((item: any) => item.id);
-        console.log('Selected projects:', this.state.selectedProjects);
-        const selectedProjects = this.state.selectedProjects.map((item: any) => item.id);
-        console.log('Saving settings:', selectedProjects, this.state.engine, this.state.apiKey, this.state.useAzure);
+        const selectedIds = this.projectSelection.value
+            .map((selectionRange) => {
+            // selectionRange contains beginIndex and endIndex
+            return this.state.projects
+                .slice(selectionRange.beginIndex, selectionRange.endIndex + 1)
+                .map((item) => item.id);
+            }).flat();
+
+        console.log('Saving settings:', selectedIds, this.state.engine, this.state.apiKey, this.state.useAzure);
         const settings = {
-            projects: selectedProjects,
+            projects: selectedIds,
             engine: this.state.engine,
             apiKey: this.state.apiKey,
             useAzure: this.state.useAzure
         };
 
         localStorage.setItem('chatgpt-settings', JSON.stringify(settings));
-        // alert('Settings saved successfully!');
+        alert('Settings saved successfully!');
     }
 
     public render(): JSX.Element {
@@ -129,7 +115,6 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                                             placeholder="Select projects"
                                             items={this.state.projects}
                                             selection={this.projectSelection}
-                                            onSelect={(event, item) => this.state.selectedProjects.push({id: item.id, text: item.text!})}
                                         />
                                     )}
                                 </Observer>
@@ -155,7 +140,6 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                                 <TextField
                                     value={this.state.apiKey}
                                     onChange={(e, newValue) => this.setState({ apiKey: newValue })}
-                                    // onChange={(event, newValue) => this.handleInputChange(event, newValue)}
                                     ariaLabel="API Key"
                                 />
                             </div>
@@ -163,7 +147,8 @@ export class SettingsPage extends React.Component<{}, ISettingsState> {
                                 <Checkbox
                                     label="Use Azure OpenAI Endpoint"
                                     checked={this.state.useAzure}
-                                    onChange={this.handleCheckboxChange}
+                                    // onChange={this.handleCheckboxChange}
+                                    onChange={(e, checked) => this.setState({ useAzure: checked })}
                                     ariaLabel="Use Azure OpenAI Endpoint"
                                 />
                             </div>
