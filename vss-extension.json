@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "id": "Jedusoft-chatgpt-code-review-dev",
     "name": "OpenAI ChatGPT Code Review",
-    "version": "0.0.3",
+    "version": "0.0.5",
     "publisher": "Jedusoft",
     "description": "Automatically review pull requests using ChatGPT or other AI models.",
     "public": false,
@@ -31,7 +31,18 @@
               "name": "My first extension",
               "uri": "dist/home/home.html"
           }
-        }
+        },
+        {
+            "id": "chatgpt-code-review-settings",
+            "type": "ms.vss-web.hub",
+            "targets": [
+              "ms.vss-web.collection-admin-hub-group"
+            ],
+            "properties": {
+              "name": "ChatGPT Code Review Settings",
+              "uri": "https://localhost:3000/settings/settings.html"
+            }
+          }
     ],
     "files": [
         {
